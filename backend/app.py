@@ -64,11 +64,8 @@ def detect_color(image):
 
 
 # ---------------- ROUTES ----------------
-@app.route("/analyze", methods=["POST", "OPTIONS"])
+@app.route("/analyze", methods=["POST"])
 def analyze():
-    # ✅ Handle preflight properly
-    if request.method == "OPTIONS":
-        return '', 200
 
     if "image" not in request.files:
         return jsonify({"error": "No image provided"}), 400

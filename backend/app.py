@@ -14,6 +14,8 @@ app = Flask(__name__)
 CORS(
     app,
     resources={r"/*": {"origins": "*"}},
+    allow_headers=["Content-Type"],
+    methods=["GET", "POST", "OPTIONS"]
 )
 
 # ---------------- CLASS NAMES ----------------
@@ -61,9 +63,8 @@ def detect_color(image):
 # ---------------- ROUTES ----------------
 @app.route("/analyze", methods=["POST", "OPTIONS"])
 def analyze():
-    # ✅ Handle preflight request
     if request.method == "OPTIONS":
-        return jsonify({}), 200
+        return '', 200
 
     if "image" not in request.files:
         return jsonify({"error": "No image provided"}), 400

@@ -12,16 +12,13 @@ from model import build_model
 app = Flask(__name__)
 
 # ✅ Strong CORS (works in all cases)
-CORS(app)
-
-# 🔥 FORCE headers (this is what actually fixes your issue)
-@app.after_request
-def after_request(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
-    return response
-
+CORS(
+    app,
+    supports_credentials=True,
+    resources={r"/*": {"origins": "*"}},
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "OPTIONS"]
+)
 
 # ---------------- CLASS NAMES ----------------
 class_names = ["dress", "jeans", "shirt", "shoes"]

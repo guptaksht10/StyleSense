@@ -45,36 +45,21 @@ transform = transforms.Compose([
 # ---------------- COLOR DETECTION ----------------
 def detect_color(image):
     img = np.array(image)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-
-    pixels = np.float32(img.reshape(-1, 3))
-
-    _, labels, centers = cv2.kmeans(
-        pixels, 3, None,
-        (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0),
-        10, cv2.KMEANS_RANDOM_CENTERS
-    )
-
-    counts = np.bincount(labels.flatten())
-    dominant = centers[np.argmax(counts)]
-    b, g, r = dominant
+    avg = img.mean(axis=(0,1))
+    r, g, b = avg
 
     if r > 200 and g > 200 and b > 200:
         return "white"
     elif r < 50 and g < 50 and b < 50:
         return "black"
-    elif abs(int(r) - int(g)) < 25 and abs(int(g) - int(b)) < 25 and 50 < r < 200:
+    elif abs(r-g)<25 and abs(g-b)<25:
         return "gray"
-    elif r > g and r > b and r > 100:
+    elif r > g and r > b:
         return "red"
-    elif g > r and g > b and g > 100:
+    elif g > r and g > b:
         return "green"
-    elif b > r and b > g and b > 100:
+    elif b > r and b > g:
         return "blue"
-    elif r > 150 and g > 120 and b < 80:
-        return "yellow"
-    elif r > 120 and g < 80 and b > 120:
-        return "purple"
     else:
         return "mixed"
 
@@ -122,4 +107,4 @@ def home():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False) 

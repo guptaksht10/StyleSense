@@ -23,15 +23,21 @@ CORS(
 # ---------------- CLASS NAMES ----------------
 class_names = ["dress", "jeans", "shirt", "shoes"]
 
-# ---------------- LOAD MODEL ----------------
+# ---------------- LOAD MODEL (lazy) ----------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = build_model()
-model.load_state_dict(torch.load("model.pth", map_location=device))
-model = model.to(device)
-model.eval()
+_model = None
 
-print("✅ Model loaded successfully")
+def get_model():
+    global _model
+    if _model is None:
+        print("⏳ Loading model...")
+        _model = build_model()
+        _model.load_state_dict(torch.load("model.pth", map_location=device))
+        _model = _model.to(device)
+        _model.eval()
+        print("✅ Model loaded successfully")
+    return _model
 
 # ---------------- TRANSFORM ----------------
 transform = transforms.Compose([
@@ -66,7 +72,7 @@ def detect_color(image):
 # ---------------- ROUTES ----------------
 @app.route("/analyze", methods=["POST"])
 def analyze():
-
+    print("incoming request")
     if "image" not in request.files:
         return jsonify({"error": "No image provided"}), 400
 
@@ -80,7 +86,7 @@ def analyze():
         img_tensor = transform(image).unsqueeze(0).to(device)
 
         with torch.no_grad():
-            outputs = model(img_tensor)
+            outputs = get_model()(img_tensor)
             probs = torch.nn.functional.softmax(outputs[0], dim=0)
             confidence, predicted = torch.max(probs, 0)
 

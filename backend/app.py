@@ -16,9 +16,8 @@ CORS(
     origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://style-sense-olive.vercel.app"
+        "https://style-sense-five.vercel.app"
     ],
-    supports_credentials=False
 )
 
 # ---------------- CLASS NAMES ----------------

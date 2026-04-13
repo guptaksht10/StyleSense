@@ -147,16 +147,24 @@ export default function Home() {
   // ── UPLOAD ────────────────────────────────────────────────────────────────
   // [NEW] Wake server before uploading (handles Render free tier spin-down)
   const wakeUpServer = async (): Promise<boolean> => {
-    const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-    for (let i = 0; i < 10; i++) {
+    const BASE_URL =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+    for (let i = 0; i < 5; i++) {
       try {
-        const res = await fetch(`${BASE_URL}/`, {
+        const res = await fetch(`${BASE_URL}/analyze`, {
+          method: "OPTIONS", // safer for CORS + lightweight
           signal: AbortSignal.timeout(5000),
         });
+
         if (res.ok) return true;
-      } catch {}
-      await new Promise(r => setTimeout(r, 3000));
+      } catch (err) {
+        // silently retry, no drama
+      }
+
+      await new Promise((r) => setTimeout(r, 2000));
     }
+
     return false;
   };
  
@@ -169,18 +177,20 @@ export default function Home() {
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
  
       // Wake server first
-      setUploadError("⏳ Waking up server, please wait...");
       const awake = await wakeUpServer();
-      if (!awake) throw new Error("Server took too long to respond. Try again in a moment.");
-      setUploadError(null);
+
+      if (!awake) {
+        setUploadError("Server took too long to respond. Try again.");
+        throw new Error("Server not responding");
+      }
  
       const formData = new FormData();
       formData.append("image", file);
  
       const res = await fetch(`${BASE_URL}/analyze`, {
         method: "POST",
-        body: formData,
-      });
+        body: formData
+      })
  
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const { color, category } = await res.json();

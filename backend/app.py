@@ -11,16 +11,11 @@ import os
 from model import build_model
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/analyze": {
-        "origins": [
-            "https://style-sense-olive.vercel.app"
-        ]
-    }
-})
+
+# ✅ Single clean CORS setup — no @after_request conflict
+CORS(app, origins=["https://style-sense-olive.vercel.app"], supports_credentials=False)
 
 # ---------------- CLASS NAMES ----------------
-# ✅ Must match alphabetical order of ImageFolder: ['dress','jeans','shirt','shoes']
 class_names = ["dress", "jeans", "shirt", "shoes"]
 
 # ---------------- LOAD MODEL ----------------
@@ -34,7 +29,6 @@ model.eval()
 print("✅ Model loaded successfully")
 
 # ---------------- TRANSFORM ----------------
-# ✅ Normalization must match train.py exactly
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -59,14 +53,12 @@ def detect_color(image):
     dominant = centers[np.argmax(counts)]
     b, g, r = dominant
 
-    # ✅ gray detection added
-    # ✅ fix in app.py detect_color()
     if r > 200 and g > 200 and b > 200:
         return "white"
     elif r < 50 and g < 50 and b < 50:
         return "black"
     elif abs(int(r) - int(g)) < 25 and abs(int(g) - int(b)) < 25 and 50 < r < 200:
-        return "gray"  # ✅ must also be in mid-brightness range
+        return "gray"
     elif r > g and r > b and r > 100:
         return "red"
     elif g > r and g > b and g > 100:
@@ -80,9 +72,13 @@ def detect_color(image):
     else:
         return "mixed"
 
-# ---------------- ROUTE ----------------
-@app.route("/analyze", methods=["POST"])
+# ---------------- ROUTES ----------------
+@app.route("/analyze", methods=["POST", "OPTIONS"])
 def analyze():
+    # ✅ Handle preflight request
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
     if "image" not in request.files:
         return jsonify({"error": "No image provided"}), 400
 
@@ -93,7 +89,7 @@ def analyze():
     try:
         image = Image.open(io.BytesIO(file.read())).convert("RGB")
 
-        # --- Category prediction ---
+        # Category prediction
         img_tensor = transform(image).unsqueeze(0).to(device)
 
         with torch.no_grad():
@@ -102,8 +98,6 @@ def analyze():
             confidence, predicted = torch.max(probs, 0)
 
         category = class_names[predicted.item()]
-
-        # --- Color detection ---
         color = detect_color(image)
 
         return jsonify({
